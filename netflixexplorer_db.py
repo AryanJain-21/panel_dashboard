@@ -1,12 +1,11 @@
 import panel as pn
-from APIs.netflixapi import NetflixAPI  # Assuming you renamed the API for Netflix
+from APIs.db_netflixapi import db_NetflixAPI  # Assuming you renamed the API for Netflix
 
 # Load JavaScript dependencies and configure Panel (required)
 pn.extension()  # Set your desired theme, removing the toggle
 
 # Initialize API
-api = NetflixAPI()
-api.load_net('titles.csv')
+api = db_NetflixAPI()
 
 # Widget Declarations
 
@@ -15,7 +14,7 @@ autocomplete = pn.widgets.AutocompleteInput(
     name="Media Title",
     value='The Spectacular Spider-Man',
     placeholder='Type media title...',
-    options=list(api.netflix['title'].unique())  # Use unique titles for suggestions
+    options=list(api.data['title'].unique())  # Use unique titles for suggestions
 )
 
 # Dropdown for selecting release year
@@ -57,7 +56,7 @@ def show_movie_details(title):
             f"**Runtime:** {movie_info['runtime']} minutes  \n"
             f"**Description:** {movie_info['description']}",
             height=300,
-            width=500  # Set the desired height here (in pixels)
+            width=500
         )
         return details
     else:

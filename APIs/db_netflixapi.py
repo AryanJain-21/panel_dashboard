@@ -1,8 +1,9 @@
 import pandas as pd
 from pymongo import MongoClient
 from bson import ObjectId
-import sankey as sk
+import sankey as sk  # Ensure this is the correct import for your Sankey implementation
 
+# Define the db_NetflixAPI class
 class db_NetflixAPI:
     
     def __init__(self, db_name='netflix_movies', collection_name='movies', connection_string=None):
@@ -12,9 +13,6 @@ class db_NetflixAPI:
         self.client = MongoClient(connection_string)
         self.db = self.client[db_name]
         self.collection = self.db[collection_name]
-        self.netflix = self.fetch_data()
-
-        # Fetch initial data and convert ObjectId to string
         self.data = self.fetch_data()  # Fetch all data on initialization
         self.data = self.convert_objectid_to_string(self.data)
 
@@ -37,14 +35,26 @@ class db_NetflixAPI:
     def get_years(self):
         """Fetches unique release years from the dataset."""
         return sorted(self.data['release_year'].unique())
+    
+    def clean_genre(self, genre):
+        """Cleans up the genre string."""
+        if isinstance(genre, str):
+            return genre.replace('[', '').replace(']', '').replace("'", "").strip()
+        return genre 
 
     def get_unique_genres(self):
-        """Returns a sorted list of unique genres in the dataset."""
-        unique_genres = set()
-        for genres in self.data['genres'].dropna():
-            genre_list = [genre.strip().replace('[', '').replace(']', '').replace("'", "") for genre in genres.split(',')]
-            unique_genres.update(genre_list)
-        return sorted(unique_genres)
+        """Fetch unique genres, applying the clean_genre method."""
+        genre_list = []
+        for genres in self.data['genres']:
+            if isinstance(genres, list):
+                cleaned_genres = [self.clean_genre(genre) for genre in genres]
+                genre_list.extend(cleaned_genres)
+            else:
+                cleaned_genres = [self.clean_genre(genre) for genre in genres.split(',')]
+                genre_list.extend(cleaned_genres)
+        
+        # Return unique genres
+        return sorted(set(genre_list))
 
     def extract_local_network(self, release_year, min_rating, only_movies, only_tv, selected_genres=None):
         """Extracts a local network of movies/shows based on filters."""
@@ -91,6 +101,10 @@ class db_NetflixAPI:
         genre_expanded = data.explode('genres').dropna(subset=['genres'])
         sankey_data = genre_expanded[['title', 'genres']].rename(columns={'title': 'src', 'genres': 'targ'})
 
+        # Ensure the data types are consistent
+        sankey_data['src'] = sankey_data['src'].astype(str)
+        sankey_data['targ'] = sankey_data['targ'].astype(str)
+
         fig = sk.make_sankey(
             df=sankey_data,
             src='src',
@@ -99,17 +113,3 @@ class db_NetflixAPI:
             height=sankey_height
         )
         return fig
-
-def main():
-    # Create an instance of db_NetflixAPI
-    netflix_api = db_NetflixAPI()
-    
-    # Example: Print all unique release years
-    print(sorted(netflix_api.get_years()))
-    
-    # Example: Fetch movies from the year 2001
-    df = netflix_api.fetch_data(filter_field='release_year', filter_value=2001)
-    print(df.head())
-
-if __name__ == '__main__':
-    main()
