@@ -1,6 +1,7 @@
 import panel as pn
 from netflixapi import NetflixAPI  # Assuming you renamed the API for Netflix
 import sankey as sk
+import pandas as pd  # Ensure pandas is imported for DataFrame manipulation
 
 # Load JavaScript dependencies and configure Panel (required)
 pn.extension()
@@ -48,11 +49,12 @@ def show_movie_details(title):
             f"**Age Certification:** {movie_info['age_certification']}  \n"
             f"**Runtime:** {movie_info['runtime']} minutes  \n"
             f"**Description:** {movie_info['description']}",
-            height=300  # Set the desired height here (in pixels)
+            height=300,
+            width=500  # Set the desired height here (in pixels)
         )
         return details
     else:
-        return pn.pane.Markdown("Movie not found.")
+        return pn.pane.Markdown("Media not found.")
 
 # Function to get the movie catalog based on year, minimum rating, and type
 def get_catalog(release_year, min_rating, only_movies, only_tv):
@@ -72,12 +74,22 @@ def get_catalog(release_year, min_rating, only_movies, only_tv):
 def get_plot(years, min_rating, sankey_width, sankey_height, only_movies, only_tv):
     # Update local based on filters for the Sankey plot
     filtered_local = local.copy()
+    
+    # Apply filtering by type if applicable
     if only_movies and not only_tv:
         filtered_local = filtered_local[filtered_local['type'] == 'MOVIE']
     elif only_tv and not only_movies:
         filtered_local = filtered_local[filtered_local['type'] == 'SHOW']
     
-    fig = sk.make_sankey(filtered_local, "type", "title", vals="imdb_score", width=sankey_width, height=sankey_height)
+    # Ensure genres are in a list format and then expand the genres
+    filtered_local['genres'] = filtered_local['genres'].apply(lambda x: x.split(', ') if isinstance(x, str) else x)
+    # Clean up genre names
+    filtered_local['genres'] = filtered_local['genres'].apply(lambda genres: [genre.strip("[]'") for genre in genres])
+    
+    genre_expanded = filtered_local.explode('genres')
+
+    # Create the Sankey plot with unique titles and genres
+    fig = sk.make_sankey(genre_expanded, "title", "genres", vals="imdb_score", width=sankey_width, height=sankey_height)
     return fig
 
 # Callback Bindings
@@ -86,7 +98,7 @@ movie_catalog = pn.bind(get_catalog, years, min_rating, only_movies, only_tv)
 sankey_plot = pn.bind(get_plot, years, min_rating, sankey_width, sankey_height, only_movies, only_tv)
 
 # Dashboard Widget Containers ("Cards")
-card_width = 320
+card_width = 560
 
 search_card = pn.Card(
     pn.Column(
@@ -112,10 +124,9 @@ plotting_card = pn.Card(
 catalog_card = pn.Card(
     pn.Column(
         movie_details_output,  # Movie details output above the table
-        pn.layout.Spacer(height=20),  # Add spacing of 20 pixels
         movie_catalog           # Movie catalog table below
     ),
-    title="Movie Catalog", width=card_width, collapsed=False
+    title="Media Catalog", width=card_width, collapsed=False
 )
 
 # Layout
