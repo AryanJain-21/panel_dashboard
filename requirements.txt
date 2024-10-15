@@ -1,0 +1,4 @@
+pymongo
+panel
+pandas
+holoviews
