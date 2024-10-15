@@ -13,13 +13,13 @@ api.load_net('titles.csv')
 # Autocomplete Input for movie titles
 autocomplete = pn.widgets.AutocompleteInput(
     name="Media Title",
-    value='',
+    value='The Spectacular Spider-Man',
     placeholder='Type media title...',
     options=list(api.netflix['title'].unique())  # Use unique titles for suggestions
 )
 
 # Dropdown for selecting release year
-years = pn.widgets.Select(name="Year", options=api.get_years(), value=2000)
+years = pn.widgets.Select(name="Year", options=api.get_years(), value=2008)
 
 # Slider for controlling the minimum rating
 min_rating = pn.widgets.FloatSlider(name="Min Rating", start=0.0, end=10.0, step=0.1, value=5.0)
@@ -32,7 +32,8 @@ only_tv = pn.widgets.Checkbox(name='Only TV Shows', value=False)
 genre_selector_plot = pn.widgets.MultiSelect(
     name='Show Media with Specific Genres',
     options=api.get_unique_genres(),  # Fetch unique genres directly from API
-    value=[]  # Default selected genres (can be empty to show all)
+    value=[],  # Default selected genres (can be empty to show all)
+    height=200
 )
 
 # Plotting Widgets for Sankey Diagram
@@ -55,7 +56,7 @@ def show_movie_details(title):
             f"**Age Certification:** {movie_info['age_certification']}  \n"
             f"**Runtime:** {movie_info['runtime']} minutes  \n"
             f"**Description:** {movie_info['description']}",
-            height=350,
+            height=300,
             width=500  # Set the desired height here (in pixels)
         )
         return details
@@ -81,7 +82,7 @@ sankey_plot = pn.bind(get_plot, years, min_rating, sankey_width, sankey_height, 
 
 # Load the image from the internet
 image_url = "https://i.pinimg.com/736x/f6/97/4e/f6974e017d3f6196c4cbe284ee3eaf4e.jpg"
-image = pn.pane.Image(image_url, height=450, width=300)
+image = pn.pane.Image(image_url, height=350, width=295)
 
 # Dashboard Widget Containers ("Cards")
 card_width = 560
