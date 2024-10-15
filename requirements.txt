@@ -1,4 +1,4 @@
 pymongo
 panel
 pandas
-holoviews
+python-dotenv
