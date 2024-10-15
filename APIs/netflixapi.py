@@ -1,5 +1,5 @@
 import pandas as pd
-import sankey as sk
+import APIs.sankey as sk
 
 class NetflixAPI:
 

@@ -1,5 +1,5 @@
 import panel as pn
-from APIs.db_netflixapi import db_NetflixAPI # Assuming you renamed the API for Netflix
+from APIs.db_netflixapi import db_NetflixAPI  # Assuming you renamed the API for Netflix
 
 # Load JavaScript dependencies and configure Panel (required)
 pn.extension()  # Set your desired theme, removing the toggle
@@ -24,8 +24,8 @@ years = pn.widgets.Select(name="Year", options=api.get_years(), value=2008)
 min_rating = pn.widgets.FloatSlider(name="Min Rating", start=0.0, end=10.0, step=0.1, value=5.0)
 
 # Checkboxes for filtering by type
-only_movies = pn.widgets.Checkbox(name='Only Movies', value=False)
-only_tv = pn.widgets.Checkbox(name='Only TV Shows', value=False)
+only_movies = pn.widgets.Checkbox(name='Movies', value=True)
+only_tv = pn.widgets.Checkbox(name='TV Shows', value=True)
 
 # Multi-Select for genres (for plotting)
 genre_selector_plot = pn.widgets.MultiSelect(
@@ -49,7 +49,6 @@ def show_movie_details(title):
             f"### Title: {movie_info['title']}  \n"
             f"**Release Year:** {movie_info['release_year']}  \n"
             f"**Type of Media:** {movie_info['type']}  \n"
-            f"**Seasons (If Applicable):** {movie_info['seasons']}  \n"
             f"**IMDb Score:** {movie_info['imdb_score']}  \n"
             f"**Genres:** {movie_info['genres']}  \n"
             f"**Age Certification:** {movie_info['age_certification']}  \n"
@@ -70,9 +69,10 @@ def get_catalog(release_year, min_rating, only_movies, only_tv):
 
 # Function to create the Sankey diagram
 def get_plot(years, min_rating, sankey_width, sankey_height, only_movies, only_tv, selected_genres):
-    filtered_local = api.extract_local_network(years, min_rating, only_movies, only_tv, selected_genres)
-    fig = api.create_sankey_plot(filtered_local, sankey_width, sankey_height)
+    filtered_local = api.extract_local_network(years, min_rating, only_movies, only_tv)
+    fig = api.create_sankey_plot(filtered_local, sankey_width, sankey_height, selected_genres)  # Ensure the correct filtered data is used
     return fig
+
 
 # Callback Bindings
 movie_details_output = pn.bind(show_movie_details, autocomplete)
