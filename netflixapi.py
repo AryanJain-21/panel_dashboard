@@ -15,7 +15,6 @@ class NetflixAPI:
     def load_net(self, filename):
         """Loads the Netflix dataset from a CSV file."""
         self.netflix = pd.read_csv(filename)
-        print(self.netflix)
 
     def get_years(self):
         """
