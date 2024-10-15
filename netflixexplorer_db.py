@@ -1,5 +1,5 @@
 import panel as pn
-from APIs.db_netflixapi import db_NetflixAPI  # Assuming you renamed the API for Netflix
+from APIs.db_netflixapi import db_NetflixAPI # Assuming you renamed the API for Netflix
 
 # Load JavaScript dependencies and configure Panel (required)
 pn.extension()  # Set your desired theme, removing the toggle
