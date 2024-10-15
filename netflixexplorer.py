@@ -1,5 +1,6 @@
 import panel as pn
 from netflixapi import NetflixAPI  # Assuming you renamed the API for Netflix
+import sankey as sk
 
 # Load JavaScript dependencies and configure Panel (required)
 pn.extension()
@@ -22,15 +23,15 @@ autocomplete = pn.widgets.AutocompleteInput(
 years = pn.widgets.Select(name="Year", options=api.get_years(), value=2000)
 
 # Slider for controlling the minimum rating
-min_rating = pn.widgets.IntSlider(name="Min Rating", start=1, end=10, step=1, value=5)
+min_rating = pn.widgets.FloatSlider(name="Min Rating", start=0.0, end=10.0, step=0.1, value=5.0)
 
 # Checkboxes for filtering by type
 only_movies = pn.widgets.Checkbox(name='Only Movies', value=False)
 only_tv = pn.widgets.Checkbox(name='Only TV Shows', value=False)
 
-# Fixed dimensions for the table
-table_width = 1500
-table_height = 800
+# Plotting Widgets for Sankey Diagram
+sankey_width = pn.widgets.IntSlider(name="Sankey Width", start=250, end=2000, step=250, value=1500)
+sankey_height = pn.widgets.IntSlider(name="Sankey Height", start=200, end=2500, step=100, value=800)
 
 # Callback Functions
 
@@ -46,7 +47,8 @@ def show_movie_details(title):
             f"**Genres:** {movie_info['genres']}  \n"
             f"**Age Certification:** {movie_info['age_certification']}  \n"
             f"**Runtime:** {movie_info['runtime']} minutes  \n"
-            f"**Description:** {movie_info['description']}"
+            f"**Description:** {movie_info['description']}",
+            height=300  # Set the desired height here (in pixels)
         )
         return details
     else:
@@ -54,6 +56,7 @@ def show_movie_details(title):
 
 # Function to get the movie catalog based on year, minimum rating, and type
 def get_catalog(release_year, min_rating, only_movies, only_tv):
+    global local
     local = api.extract_local_network(release_year, min_rating)
     
     # Filter by type
@@ -62,12 +65,25 @@ def get_catalog(release_year, min_rating, only_movies, only_tv):
     elif only_tv and not only_movies:
         local = local[local['type'] == 'SHOW']
     
-    table = pn.widgets.Tabulator(local, selectable=False, width=table_width, height=table_height)
+    table = pn.widgets.Tabulator(local, selectable=False, width=1500, height=800)
     return table
+
+# Function to create the Sankey diagram
+def get_plot(years, min_rating, sankey_width, sankey_height, only_movies, only_tv):
+    # Update local based on filters for the Sankey plot
+    filtered_local = local.copy()
+    if only_movies and not only_tv:
+        filtered_local = filtered_local[filtered_local['type'] == 'MOVIE']
+    elif only_tv and not only_movies:
+        filtered_local = filtered_local[filtered_local['type'] == 'SHOW']
+    
+    fig = sk.make_sankey(filtered_local, "type", "title", vals="imdb_score", width=sankey_width, height=sankey_height)
+    return fig
 
 # Callback Bindings
 movie_details_output = pn.bind(show_movie_details, autocomplete)
 movie_catalog = pn.bind(get_catalog, years, min_rating, only_movies, only_tv)
+sankey_plot = pn.bind(get_plot, years, min_rating, sankey_width, sankey_height, only_movies, only_tv)
 
 # Dashboard Widget Containers ("Cards")
 card_width = 320
@@ -78,24 +94,40 @@ search_card = pn.Card(
         years,
         min_rating,
         only_movies,
-        only_tv
+        only_tv,
     ),
     title="Search", width=card_width, collapsed=False
 )
 
-# Adding the catalog display to the layout
+# Create a separate card for plotting dimensions
+plotting_card = pn.Card(
+    pn.Column(
+        sankey_width,
+        sankey_height
+    ),
+    title="Plotting", width=card_width, collapsed=False
+)
+
+# Updated catalog_card to include the new layout with added spacing
 catalog_card = pn.Card(
-    movie_catalog,
+    pn.Column(
+        movie_details_output,  # Movie details output above the table
+        pn.layout.Spacer(height=20),  # Add spacing of 20 pixels
+        movie_catalog           # Movie catalog table below
+    ),
     title="Movie Catalog", width=card_width, collapsed=False
 )
 
 # Layout
 layout = pn.template.FastListTemplate(
     title="Netflix Movie Explorer",
-    sidebar=[search_card],
+    sidebar=[search_card, plotting_card],  # Add the plotting card to the sidebar
     main=[
-        movie_details_output,
-        catalog_card
+        pn.Tabs(
+            ("Search Movie Catalog", catalog_card),
+            ("Network", sankey_plot),  # Only in the main area
+            active=0  # Which tab is active by default?
+        )
     ],
     header_background='#a93226'
 ).servable()
