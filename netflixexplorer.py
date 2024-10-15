@@ -7,14 +7,14 @@ pn.extension()
 
 # INITIALIZE API
 api = NetflixAPI()
+api.load_net('titles.csv')
 
 # WIDGET DECLARATIONS
 
 # Search Widgets
 
 # Dropdown for selecting release year (assuming your MongoDB has a field 'release_year')
-years = sorted(api.fetch_data()['release_year'].unique())
-release_year = pn.widgets.Select(name="Release Year", options=years, value=2000)
+years = pn.widgets.Select(name="Year", options=api.get_years(), value=2000)
 
 # Slider for controlling the minimum rating or other numeric filters
 min_rating = pn.widgets.IntSlider(name="Min Rating", start=1, end=10, step=1, value=5)
@@ -25,10 +25,12 @@ height = pn.widgets.IntSlider(name="Height", start=200, end=2500, step=100, valu
 
 # CALLBACK FUNCTIONS
 
-def get_movies_by_year(release_year, min_rating):
-    df = api.get_movies_by_year_and_rating(release_year, min_rating)  # Call API method
-    table = pn.widgets.Tabulator(df, selectable=False)
+def get_catalog(release_year, min_rating):
+    global local
+    local = api.extract_local_network(release_year, min_rating)
+    table = pn.widgets.Tabulator(local, selectable=False)
     return table
+
 
 """def plot_ratings_by_year(release_year, min_rating, width, height):
     df = api.fetch_data(filter_field='release_year', filter_value=release_year)
@@ -37,7 +39,7 @@ def get_movies_by_year(release_year, min_rating):
     return pn.pane.HoloViews(bars)"""
 
 # CALLBACK BINDINGS
-movie_catalog = pn.bind(get_movies_by_year, release_year, min_rating)
+movie_catalog = pn.bind(get_catalog, years, min_rating)
 #rating_plot = pn.bind(plot_ratings_by_year, release_year, min_rating, width, height)
 
 # DASHBOARD WIDGET CONTAINERS ("CARDS")
@@ -46,7 +48,7 @@ card_width = 320
 
 search_card = pn.Card(
     pn.Column(
-        release_year,
+        years,
         min_rating
     ),
     title="Search", width=card_width, collapsed=False
@@ -73,7 +75,7 @@ layout = pn.template.FastListTemplate(
         pn.Tabs(
             ("Movies", movie_catalog),
             #("Rating Distribution", rating_plot),
-            active=1
+            active=0
         )
     ],
     header_background='#a93226'
