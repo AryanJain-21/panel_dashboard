@@ -70,7 +70,7 @@ class db_NetflixAPI:
 
 def main():
     # Create an instance of NetflixAPI
-    netflix_api = NetflixAPI()
+    netflix_api = db_NetflixAPI()
     print(sorted(netflix_api.fetch_data()['release_year'].unique()))
     # Fetch movies from the year 2001
     df = netflix_api.fetch_by_year(2001)
